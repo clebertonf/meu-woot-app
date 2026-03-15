@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Woot Test</title>
+    <script src="https://unpkg.com/@chatwoot/dashboard-apps@latest/dist/sdk.js"></script>
+</head>
+<body style="font-family:sans-serif; background:#111; color:#0f0; padding:20px;">
+    <h3>Status: <span id="status">Aguardando...</span></h3>
+    <pre id="output" style="background:#222; padding:10px; border:1px solid #444; overflow:auto;">
+        Nenhum dado recebido ainda.
+    </pre>
+
+    <script>
+        window.addEventListener("dashboard-app:ready", () => {
+            document.getElementById("status").innerText = "Conectado ao Woot!";
+            
+            const render = (data) => {
+                document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+            };
+
+            // Escuta as mudanças
+            window.chatwoot.on("conversationChanged", render);
+            window.chatwoot.on("appContext", render);
+
+            // COMANDO CHAVE: Pede os dados assim que o app carregar
+            window.chatwoot.fetchContext();
+        });
+    </script>
+</body>
+</html>
