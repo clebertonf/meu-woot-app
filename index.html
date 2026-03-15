@@ -6,26 +6,46 @@
     <script src="https://unpkg.com/@chatwoot/dashboard-apps@latest/dist/sdk.js"></script>
 </head>
 <body style="font-family:sans-serif; background:#111; color:#0f0; padding:20px;">
-    <h3>Status: <span id="status">Aguardando...</span></h3>
-    <pre id="output" style="background:#222; padding:10px; border:1px solid #444; overflow:auto;">
-        Nenhum dado recebido ainda.
+    <h3>Status: <span id="status" style="color: orange;">Iniciando...</span></h3>
+    <pre id="output" style="background:#222; padding:10px; border:1px solid #444; height: 300px; overflow:auto;">
+        Aguardando resposta do Chatwoot...
     </pre>
 
     <script>
-        window.addEventListener("dashboard-app:ready", () => {
-            document.getElementById("status").innerText = "Conectado ao Woot!";
-            
+        const statusEl = document.getElementById("status");
+        const outputEl = document.getElementById("output");
+
+        function initializeApp() {
+            statusEl.innerText = "Conectado ✅";
+            statusEl.style.color = "#0f0";
+
+            // Função para renderizar os dados
             const render = (data) => {
-                document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+                console.log("Dados recebidos:", data);
+                outputEl.textContent = JSON.stringify(data, null, 2);
             };
 
-            // Escuta as mudanças
+            // Registra os listeners
             window.chatwoot.on("conversationChanged", render);
             window.chatwoot.on("appContext", render);
 
-            // COMANDO CHAVE: Pede os dados assim que o app carregar
+            // Tenta buscar o contexto imediatamente
             window.chatwoot.fetchContext();
-        });
+        }
+
+        // 1. Tenta pelo evento oficial
+        window.addEventListener("dashboard-app:ready", initializeApp);
+
+        // 2. Backup: Se o SDK já carregou mas o evento passou batido
+        setTimeout(() => {
+            if (window.chatwoot && statusEl.innerText === "Iniciando...") {
+                console.log("SDK detectado via backup (setTimeout)");
+                initializeApp();
+            } else if (!window.chatwoot) {
+                statusEl.innerText = "Erro: SDK não carregado ❌";
+                statusEl.style.color = "red";
+            }
+        }, 2000);
     </script>
 </body>
 </html>
