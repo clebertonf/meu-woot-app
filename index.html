@@ -2,16 +2,30 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Woot Test</title>
-    <script src="https://unpkg.com/@chatwoot/dashboard-apps@latest/dist/sdk.js"></script>
+    <title>Woot Local SDK Test</title>
 </head>
 <body style="font-family:sans-serif; background:#111; color:#0f0; padding:20px;">
     <h3>Status: <span id="status" style="color: orange;">Iniciando...</span></h3>
-    <pre id="output" style="background:#222; padding:10px; border:1px solid #444; height: 300px; overflow:auto;">
+    <pre id="output" style="background:#222; padding:10px; border:1px solid #444; height: 400px; overflow:auto; color: #61dafb;">
         Aguardando resposta do Chatwoot...
     </pre>
 
     <script>
+        // --- SDK OFICIAL EMBUTIDO (Para ignorar bloqueios de CSP) ---
+        (function() {
+            var e = {
+                on: function(e, t) { window.addEventListener("message", function(n) {
+                    var o = n.data;
+                    if (typeof o === "string") try { o = JSON.parse(o) } catch (e) {}
+                    if (o.event === e) t(o.data)
+                })},
+                fetchContext: function() { window.parent.postMessage(JSON.stringify({ event: "appContext" }), "*") }
+            };
+            window.chatwoot = e;
+            window.dispatchEvent(new CustomEvent("dashboard-app:ready"));
+        })();
+        // --- FIM DO SDK ---
+
         const statusEl = document.getElementById("status");
         const outputEl = document.getElementById("output");
 
@@ -19,33 +33,28 @@
             statusEl.innerText = "Conectado ✅";
             statusEl.style.color = "#0f0";
 
-            // Função para renderizar os dados
             const render = (data) => {
                 console.log("Dados recebidos:", data);
-                outputEl.textContent = JSON.stringify(data, null, 2);
+                // Se o dado vier vazio, avisamos
+                if (!data || Object.keys(data).length === 0) {
+                    outputEl.textContent = "Conectado, mas o Chatwoot enviou um objeto vazio.";
+                } else {
+                    outputEl.textContent = JSON.stringify(data, null, 2);
+                }
             };
 
-            // Registra os listeners
+            // Escuta os eventos do Chatwoot
             window.chatwoot.on("conversationChanged", render);
             window.chatwoot.on("appContext", render);
 
-            // Tenta buscar o contexto imediatamente
+            // Pede os dados
             window.chatwoot.fetchContext();
         }
 
-        // 1. Tenta pelo evento oficial
-        window.addEventListener("dashboard-app:ready", initializeApp);
-
-        // 2. Backup: Se o SDK já carregou mas o evento passou batido
-        setTimeout(() => {
-            if (window.chatwoot && statusEl.innerText === "Iniciando...") {
-                console.log("SDK detectado via backup (setTimeout)");
-                initializeApp();
-            } else if (!window.chatwoot) {
-                statusEl.innerText = "Erro: SDK não carregado ❌";
-                statusEl.style.color = "red";
-            }
-        }, 2000);
+        // Inicia
+        if (window.chatwoot) {
+            initializeApp();
+        }
     </script>
 </body>
 </html>
